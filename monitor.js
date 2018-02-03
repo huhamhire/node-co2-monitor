@@ -5,7 +5,7 @@ const usb = require('usb');
  * CO2-monitor Connection
  * @class Monitor
  */
-class Monitor {
+class CO2Monitor {
     /**
      * @constructor
      */
@@ -20,6 +20,9 @@ class Monitor {
         this._device = null;
         this._interface = null;
         this._endpoint = null;
+
+        this._co2 = null;
+        this._temp = null;
     }
 
     /**
@@ -43,7 +46,7 @@ class Monitor {
             wValue= 0x0300,
             wIdx = 0x00;
         // Setup OUT transfer.
-        this._device.controlTransfer(bmReqType, bReq, wValue, wIdx, this.key, (err) => {
+        this._device.controlTransfer(bmReqType, bReq, wValue, wIdx, this._key, (err) => {
             if (err) {
                 return callback(err);
             }
@@ -66,9 +69,65 @@ class Monitor {
         });
     }
 
+    /**
+     * Fetch data from CO2 monitor.
+     * @param {Function} callback
+     */
     transfer (callback) {
         const transLen = 8;
-        this._endpoint.transfer(transLen, (err))
+        this._endpoint.transfer(transLen, (err) => {
+            if (err) {
+                return callback(err);
+            }
+            const nTransfers = 8,
+                transferSize = 64;
+            this._endpoint.startPoll(nTransfers, transferSize);
+
+            const results = {};
+
+            this._endpoint.on('data', (data) => {
+                const decrypted = CO2Monitor._decrypt(this._key, data);
+                const checksum = decrypted[3],
+                    sum = decrypted.slice(0, 3)
+                        .reduce((s, item) => (s + item), 0) & 0xff;
+                if (decrypted[4] !== 0x0d || checksum !== sum) {
+                    console.error('Checksum Error.');
+                    return;
+                }
+
+                const op = decrypted[0];
+                const value = decrypted[1] << 8 | decrypted[2];
+                switch (op) {
+                    case 0x42:
+                        // Temperature
+                        this._temp = (value / 16 - 273.15).toFixed(2);
+                        break;
+                    case 0x50:
+                        // CO2
+                        this._co2 = value;
+                        break;
+                    default:
+                        break;
+                }
+            });
+            this._endpoint.on('end', (err) => callback(err));
+        });
+    }
+
+    /**
+     * Get latest Ambient Temperature (Tamb)
+     * @returns {Number}
+     */
+    get temperature () {
+        return this._temp;
+    }
+
+    /**
+     * Get latest Relative Concentration of CO2 (CntR)
+     * @returns {Number}
+     */
+    get co2 () {
+        return this._co2;
     }
 
     /**
@@ -76,8 +135,9 @@ class Monitor {
      * @param {Buffer} key
      * @param {Buffer} data
      * @see https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor/log/17909-all-your-base-are-belong-to-us
+     * @static
      */
-    _decrypt(key, data) {
+    static _decrypt(key, data) {
         const cstate = [
             0x48, 0x74, 0x65, 0x6D, 0x70, 0x39, 0x39, 0x65
         ];
