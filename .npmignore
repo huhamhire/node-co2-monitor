@@ -5,3 +5,5 @@
 .gitignore
 
 node_modules/
+
+demo.js

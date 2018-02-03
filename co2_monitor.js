@@ -30,7 +30,7 @@ class CO2Monitor {
      * @param {Function} callback
      */
     connect (callback) {
-        this._device = usb.findByIds(vid, pid);
+        this._device = usb.findByIds(this._vid, this._pid);
         if (!this._device) {
             return callback(new Error('Device not found!'));
         }
@@ -110,6 +110,9 @@ class CO2Monitor {
                         break;
                 }
             });
+            this._endpoint.on('error', (err) => {
+                console.error(err.stack);
+            });
             this._endpoint.on('end', (err) => callback(err));
         });
     }
@@ -162,4 +165,4 @@ class CO2Monitor {
     }
 }
 
-module.exports = Monitor;
+module.exports = CO2Monitor;
