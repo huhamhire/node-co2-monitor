@@ -7,11 +7,15 @@ const usb = require('usb');
  */
 class CO2Monitor {
     /**
+     * @param {[Object]} options - Optional configuration.
+     * @param {[Number]} options.vid - VendorId of CO2 monitor.
+     * @param {[Number]} options.pid - ProductId of CO2 monitor.
      * @constructor
      */
-    constructor () {
-        this._vid = 0x04D9;
-        this._pid = 0xA052;
+    constructor (options) {
+        const o = options;
+        this._vid = (o && o.vid) || 0x04D9;
+        this._pid = (o && o.pid) || 0xA052;
         // Random key buffer.
         this._key = Buffer.from([
             0xc4, 0xc6, 0xc0, 0x92, 0x40, 0x23, 0xdc, 0x96
@@ -61,11 +65,9 @@ class CO2Monitor {
      * @param {Function} callback
      */
     disconnect (callback) {
-        this._endpoint.stopPoll(() => {
-            this._interface.release(true, (err) => {
-                this._device.close();
-                return callback(err);
-            });
+        this._interface.release(true, (err) => {
+            this._device.close();
+            return callback(err);
         });
     }
 
@@ -83,16 +85,17 @@ class CO2Monitor {
                 transferSize = 64;
             this._endpoint.startPoll(nTransfers, transferSize);
 
-            const results = {};
+            const done = {};
 
             this._endpoint.on('data', (data) => {
                 const decrypted = CO2Monitor._decrypt(this._key, data);
                 const checksum = decrypted[3],
                     sum = decrypted.slice(0, 3)
                         .reduce((s, item) => (s + item), 0) & 0xff;
+                // Validate checksum.
                 if (decrypted[4] !== 0x0d || checksum !== sum) {
-                    console.error('Checksum Error.');
-                    return;
+                    const err = new Error('Checksum Error.');
+                    return this._endpoint.stopPoll(() => callback(err));
                 }
 
                 const op = decrypted[0];
@@ -100,20 +103,27 @@ class CO2Monitor {
                 switch (op) {
                     case 0x42:
                         // Temperature
-                        this._temp = (value / 16 - 273.15).toFixed(2);
+                        this._temp = parseFloat(
+                            (value / 16 - 273.15).toFixed(2)
+                        );
+                        done.temp = true;
                         break;
                     case 0x50:
                         // CO2
                         this._co2 = value;
+                        done.co2 = true;
                         break;
                     default:
                         break;
                 }
+                // Fetch data only once a time.
+                if (done.temp && done.co2) {
+                    this._endpoint.stopPoll(callback);
+                }
             });
             this._endpoint.on('error', (err) => {
-                console.error(err.stack);
+                return this._endpoint.stopPoll(() => callback(err));
             });
-            this._endpoint.on('end', (err) => callback(err));
         });
     }
 
