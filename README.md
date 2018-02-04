@@ -81,7 +81,17 @@ Get latest Ambient Temperature (Tamb) in ℃.
 Get latest Relative Concentration of CO2 (CntR) in ppm.
 
 
+## Projects using node-co2-monitor
+
+* [CO2 Monitor Exporter](https://github.com/huhamhire/co2-monitor-exporter) - Prometheus exporter for CO2 concentration and indoor temperature from TFA Dostmann AirCO2NTROL Mini.
+
+
 ## Credits
 
 Inspired by Henryk Plötz:
 [Reverse-Engineering a low-cost USB CO₂ monitor](https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor/log/17909-all-your-base-are-belong-to-us).
+
+
+## License
+
+MIT
