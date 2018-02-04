@@ -1,4 +1,5 @@
 'use strict';
+const os = require('os');
 const usb = require('usb');
 
 /**
@@ -41,6 +42,10 @@ class CO2Monitor {
         // Open device to use control methods.
         this._device.open();
         this._interface = this._device.interfaces[0];
+        // Detach linux kernel driver, or won't get endpoint connection.
+        if (os.platform() === 'linux' && this._interface.isKernelDriverActive()) {
+            this._interface.detachKernelDriver();
+        }
         if (!this._interface) {
             return callback(new Error('Interface not found!'));
         }
