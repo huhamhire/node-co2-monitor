@@ -1,12 +1,13 @@
 'use strict';
 const os = require('os');
+const EventEmitter = require('events');
 const usb = require('usb');
 
 /**
  * CO2-monitor Connection
  * @class Monitor
  */
-class CO2Monitor {
+class CO2Monitor extends EventEmitter {
     /**
      * @param {[Object]} options - Optional configuration.
      * @param {[Number]} options.vid - VendorId of CO2 monitor.
@@ -14,6 +15,7 @@ class CO2Monitor {
      * @constructor
      */
     constructor (options) {
+        super();
         const o = options;
         this._vid = (o && o.vid) || 0x04D9;
         this._pid = (o && o.pid) || 0xA052;
@@ -37,7 +39,9 @@ class CO2Monitor {
     connect (callback) {
         this._device = usb.findByIds(this._vid, this._pid);
         if (!this._device) {
-            return callback(new Error('Device not found!'));
+            const err = new Error('Device not found!');
+            this.emit('error', err);
+            return callback(err);
         }
         // Open device to use control methods.
         this._device.open();
@@ -47,7 +51,9 @@ class CO2Monitor {
             this._interface.detachKernelDriver();
         }
         if (!this._interface) {
-            return callback(new Error('Interface not found!'));
+            const err = new Error('Interface not found!');
+            this.emit('error', err);
+            return callback(err);
         }
         // Parameters for `libusb_control_transfer`.
         const bmReqType = 0x21,
@@ -57,10 +63,12 @@ class CO2Monitor {
         // Setup OUT transfer.
         this._device.controlTransfer(bmReqType, bReq, wValue, wIdx, this._key, (err) => {
             if (err) {
+                this.emit('error', err);
                 return callback(err);
             }
             this._interface.claim();
             this._endpoint = this._interface.endpoints[0];
+            this.emit('connect', this._endpoint);
             return callback();
         });
     }
@@ -70,27 +78,35 @@ class CO2Monitor {
      * @param {Function} callback
      */
     disconnect (callback) {
-        this._interface.release(true, (err) => {
-            this._device.close();
-            return callback(err);
+        this._endpoint.stopPoll(() => {
+            if (os.platform() === 'linux') {
+                this._interface.attachKernelDriver();
+            }
+            this._interface.release(true, (err) => {
+                if (err) {
+                    this.emit('error', err);
+                }
+                this._device.close();
+                this.emit('disconnect');
+                return callback(err);
+            });
         });
     }
 
     /**
-     * Fetch data from CO2 monitor.
+     * Start data transfer from CO2 monitor.
      * @param {Function} callback
      */
     transfer (callback) {
         const transLen = 8;
         this._endpoint.transfer(transLen, (err) => {
             if (err) {
+                this.emit('error', err);
                 return callback(err);
             }
             const nTransfers = 8,
                 transferSize = 64;
             this._endpoint.startPoll(nTransfers, transferSize);
-
-            const done = {};
 
             this._endpoint.on('data', (data) => {
                 const decrypted = CO2Monitor._decrypt(this._key, data);
@@ -99,8 +115,9 @@ class CO2Monitor {
                         .reduce((s, item) => (s + item), 0) & 0xff;
                 // Validate checksum.
                 if (decrypted[4] !== 0x0d || checksum !== sum) {
-                    const err = new Error('Checksum Error.');
-                    return this._finishTransfer(err, callback);
+                    return this._interface.emit(
+                        'error', new Error('Checksum Error.')
+                    );
                 }
 
                 const op = decrypted[0];
@@ -111,36 +128,21 @@ class CO2Monitor {
                         this._temp = parseFloat(
                             (value / 16 - 273.15).toFixed(2)
                         );
-                        done.temp = true;
+                        this.emit('temp', this._temp);
                         break;
                     case 0x50:
                         // CO2
                         this._co2 = value;
-                        done.co2 = true;
+                        this.emit('co2', this.co2);
                         break;
                     default:
                         break;
                 }
-                // Fetch data only once a time.
-                if (done.temp && done.co2) {
-                    return this._finishTransfer(null, callback);
-                }
             });
             this._endpoint.on('error', (err) =>
-                this._finishTransfer(err, callback)
+                this.emit('error', err)
             );
-        });
-    }
-
-    /**
-     * Stop transferring data.
-     * @param {[Error]} err
-     * @param {[Function]} callback
-     */
-    _finishTransfer (err, callback) {
-        this._endpoint.stopPoll(() => {
-            this._endpoint.pollTransfers = null;
-            return callback(err);
+            return callback();
         });
     }
 

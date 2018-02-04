@@ -9,6 +9,7 @@ Node.JS library for reading CO2 concentration and indoor temperature from TFA Do
 * [Getting started](#getting-started)
 * [API](#api)
     * [Methods](#methods)
+    * [Events](#events)
 * [Credits](#credits)
 
 
@@ -44,17 +45,24 @@ monitor.connect((err) => {
         if (err) {
             return console.error(err.stack);
         }
-        console.log('Data transferred.');
+    });
+});
 
-        // Get results.
-        console.log(`temp: ${ monitor.temperature }`);
-        console.log(`co2: ${ monitor.co2 }`);
+// Get results.
+monitor.on('temp', (temperature) => {
+    console.log(`temp: ${ temperature }`);
+});
+monitor.on('co2', (co2) => {
+    console.log(`co2: ${ co2 }`);
+});
 
-        // Disconnect device
-        monitor.disconnect(() => {
-            console.log('Monitor disconnected.');
-            process.exit(0);
-        });
+// Error handler
+monitor.on('error', (err) => {
+    console.error(err.stack);
+    // Disconnect device
+    monitor.disconnect(() => {
+        console.log('Monitor disconnected.');
+        process.exit(0);
     });
 });
 ```
@@ -79,6 +87,18 @@ Get latest Ambient Temperature (Tamb) in ℃.
 
 #### monitor.co2 -> Number
 Get latest Relative Concentration of CO2 (CntR) in ppm.
+
+
+### Events
+
+#### temp -> Number
+Triggered by temperature update with Ambient Temperature (Tamb) in ℃.
+
+#### co2 -> Number
+Triggered by co2 update with Relative Concentration of CO2 (CntR) in ppm.
+
+#### errror -> Error
+Triggered by error.
 
 
 ## Projects using node-co2-monitor
