@@ -1,27 +1,41 @@
 {
-    "name": "node-co2-monitor",
-    "description": "Node.JS library for reading CO2 concentration and indoor temperature from TFA Dostmann AirCO2NTROL Mini.",
-    "license": "MIT",
-    "version": "0.1.0",
-    "author": {
-        "name": "Hamhire Hu",
-        "email": "me@huhamhire.com",
-        "url": "https://hamhire.com"
-    },
-    "repository": {
-        "type": "git",
-        "url": ""
-    },
-    "dependencies": {
-      "usb": "^1.3.1"
-    },
-    "engines": {
-        "node": ">=6.0"
-    },
-    "keywords": [
-        "CO2",
-        "temperature",
-        "TFA-Dostman",
-        "co2-monitor"
-    ]
+  "name": "node-co2-monitor",
+  "description": "Node.JS library for reading CO2 concentration and indoor temperature from TFA Dostmann AirCO2NTROL Mini.",
+  "license": "MIT",
+  "version": "0.1.0",
+  "author": {
+    "name": "Hamhire Hu",
+    "email": "me@huhamhire.com",
+    "url": "https://hamhire.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "main": "co2_monitor.js",
+  "dependencies": {
+    "usb": "^1.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^4.17.0"
+  },
+  "scripts": {
+      "eslint": "eslint ./"
+  },
+  "engines": {
+    "node": ">=6.0"
+  },
+  "os": [
+    "linux",
+    "win32",
+    "darwin"
+  ],
+  "keywords": [
+    "iot",
+    "backend",
+    "CO2",
+    "temperature",
+    "TFA-Dostman",
+    "co2-monitor"
+  ]
 }

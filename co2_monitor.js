@@ -47,7 +47,7 @@ class CO2Monitor {
         // Parameters for `libusb_control_transfer`.
         const bmReqType = 0x21,
             bReq = 0x09,
-            wValue= 0x0300,
+            wValue = 0x0300,
             wIdx = 0x00;
         // Setup OUT transfer.
         this._device.controlTransfer(bmReqType, bReq, wValue, wIdx, this._key, (err) => {
@@ -121,9 +121,9 @@ class CO2Monitor {
                     this._endpoint.stopPoll(callback);
                 }
             });
-            this._endpoint.on('error', (err) => {
-                return this._endpoint.stopPoll(() => callback(err));
-            });
+            this._endpoint.on('error', (err) =>
+                this._endpoint.stopPoll(() => callback(err))
+            );
         });
     }
 
