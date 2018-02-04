@@ -11,6 +11,7 @@ Node.JS library for reading CO2 concentration and indoor temperature from TFA Do
     * [Methods](#methods)
     * [Events](#events)
 * [Credits](#credits)
+* [License](#license)
 
 
 ## Supported Hardware
