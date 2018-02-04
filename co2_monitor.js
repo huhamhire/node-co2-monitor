@@ -95,7 +95,7 @@ class CO2Monitor {
                 // Validate checksum.
                 if (decrypted[4] !== 0x0d || checksum !== sum) {
                     const err = new Error('Checksum Error.');
-                    return this._endpoint.stopPoll(() => callback(err));
+                    return this._finishTransfer(err, callback);
                 }
 
                 const op = decrypted[0];
@@ -118,12 +118,24 @@ class CO2Monitor {
                 }
                 // Fetch data only once a time.
                 if (done.temp && done.co2) {
-                    this._endpoint.stopPoll(callback);
+                    return this._finishTransfer(null, callback);
                 }
             });
             this._endpoint.on('error', (err) =>
-                this._endpoint.stopPoll(() => callback(err))
+                this._finishTransfer(err, callback)
             );
+        });
+    }
+
+    /**
+     * Stop transferring data.
+     * @param {[Error]} err
+     * @param {[Function]} callback
+     */
+    _finishTransfer (err, callback) {
+        this._endpoint.stopPoll(() => {
+            this._endpoint.pollTransfers = null;
+            return callback(err);
         });
     }
 
