@@ -28,7 +28,7 @@ npm install node-co2-monitor
 
 ```javascript
 'use strict';
-const CO2Monitor = require('./co2_monitor');
+const CO2Monitor = require('node-co2-monitor');
 
 const monitor = new CO2Monitor();
 
