@@ -95,9 +95,10 @@ class CO2Monitor extends EventEmitter {
 
     /**
      * Start data transfer from CO2 monitor.
-     * @param {Function} callback
+     * @param {[Function]} callback
      */
     transfer (callback) {
+        callback = callback || (() => {});
         const transLen = 8;
         this._endpoint.transfer(transLen, (err) => {
             if (err) {

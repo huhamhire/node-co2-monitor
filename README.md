@@ -41,11 +41,7 @@ monitor.connect((err) => {
     console.log('Monitor connected.');
 
     // Read data from CO2 monitor.
-    monitor.transfer((err) => {
-        if (err) {
-            return console.error(err.stack);
-        }
-    });
+    monitor.transfer();
 });
 
 // Get results.
@@ -79,8 +75,8 @@ Setup usb connection to CO2 monitor.
 #### montior.disconnect(Function callback)
 Close device connection.
 
-#### monitor.transfer(Function callback)
-Fetch data from CO2 monitor.
+#### monitor.transfer([Function callback])
+Start data transfer from CO2 monitor.
 
 #### monitor.temperature -> Number
 Get latest Ambient Temperature (Tamb) in ℃.
