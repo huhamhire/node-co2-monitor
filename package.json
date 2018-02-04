@@ -2,7 +2,7 @@
   "name": "node-co2-monitor",
   "description": "Node.JS library for reading CO2 concentration and indoor temperature from TFA Dostmann AirCO2NTROL Mini.",
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "author": {
     "name": "Hamhire Hu",
     "email": "me@huhamhire.com",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/huhamhire/node-co2-monitor"
   },
   "main": "co2_monitor.js",
   "dependencies": {
