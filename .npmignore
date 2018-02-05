@@ -6,3 +6,5 @@
 
 node_modules/
 .npmrc
+
+demo.js
