@@ -79,13 +79,15 @@ class CO2Monitor extends EventEmitter {
      */
     disconnect (callback) {
         this._endpoint.stopPoll(() => {
-            if (os.platform() === 'linux') {
-                this._interface.attachKernelDriver();
-            }
             this._interface.release(true, (err) => {
                 if (err) {
                     this.emit('error', err);
                 }
+
+                if (os.platform() === 'linux') {
+                    this._interface.attachKernelDriver();
+                }
+
                 this._device.close();
                 this.emit('disconnect');
                 return callback(err);
