@@ -76,7 +76,7 @@ Create CO2Monitor instance.
 #### monitor.connect(Function callback)
 Setup usb connection to CO2 monitor.
 
-#### montior.disconnect(Function callback)
+#### monitor.disconnect(Function callback)
 Close device connection.
 
 #### monitor.transfer([Function callback])
@@ -97,7 +97,7 @@ Triggered by temperature update with Ambient Temperature (Tamb) in ℃.
 #### co2 -> Number
 Triggered by co2 update with Relative Concentration of CO2 (CntR) in ppm.
 
-#### errror -> Error
+#### error -> Error
 Triggered by error.
 
 
