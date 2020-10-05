@@ -112,11 +112,12 @@ class CO2Monitor extends EventEmitter {
             this._endpoint.startPoll(nTransfers, transferSize);
 
             this._endpoint.on('data', (data) => {
-                const decrypted = CO2Monitor._decrypt(this._key, data);
+                // Skip decryption for modern CO2 sensors.
+                const decrypted = data[4] != 0x0d ? CO2Monitor._decrypt(this._key, data) : data;
                 const checksum = decrypted[3],
                     sum = decrypted.slice(0, 3)
                         .reduce((s, item) => (s + item), 0) & 0xff;
-                // Validate checksum.
+                // Validate checksum (or skip if magic byte detected).
                 if (decrypted[4] !== 0x0d || checksum !== sum) {
                     return this._interface.emit(
                         'error', new Error('Checksum Error.')
