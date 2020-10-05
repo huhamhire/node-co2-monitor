@@ -12,13 +12,15 @@ class CO2Monitor extends EventEmitter {
      * @param {[Object]} options - Optional configuration.
      * @param {[Number]} options.vid - VendorId of CO2 monitor.
      * @param {[Number]} options.pid - ProductId of CO2 monitor.
+     * @param {[Boolean]} options.debug - Enable debug tracing of usb connection.
      * @constructor
      */
-    constructor (options) {
+    constructor(options) {
         super();
         const o = options;
         this._vid = (o && o.vid) || 0x04D9;
         this._pid = (o && o.pid) || 0xA052;
+        this._debug = (o && o.debug) || false;
         // Random key buffer.
         this._key = Buffer.from([
             0xc4, 0xc6, 0xc0, 0x92, 0x40, 0x23, 0xdc, 0x96
@@ -30,13 +32,18 @@ class CO2Monitor extends EventEmitter {
 
         this._co2 = null;
         this._temp = null;
+        this._hum = null;
+
+        if (this._debug) {
+            usb.setDebugLevel(4);
+        }
     }
 
     /**
      * Setup usb connection to CO2 monitor.
      * @param {Function} callback
      */
-    connect (callback) {
+    connect(callback) {
         this._device = usb.findByIds(this._vid, this._pid);
         if (!this._device) {
             const err = new Error('Device not found!');
@@ -77,17 +84,15 @@ class CO2Monitor extends EventEmitter {
      * Close device connection.
      * @param {Function} callback
      */
-    disconnect (callback) {
+    disconnect(callback) {
         this._endpoint.stopPoll(() => {
+            if (os.platform() === 'linux') {
+                this._interface.attachKernelDriver();
+            }
             this._interface.release(true, (err) => {
                 if (err) {
                     this.emit('error', err);
                 }
-
-                if (os.platform() === 'linux') {
-                    this._interface.attachKernelDriver();
-                }
-
                 this._device.close();
                 this.emit('disconnect');
                 return callback(err);
@@ -99,17 +104,16 @@ class CO2Monitor extends EventEmitter {
      * Start data transfer from CO2 monitor.
      * @param {[Function]} callback
      */
-    transfer (callback) {
-        callback = callback || (() => {});
+    transfer(callback) {
+        callback = callback || (() => { });
         const transLen = 8;
         this._endpoint.transfer(transLen, (err) => {
             if (err) {
                 this.emit('error', err);
                 return callback(err);
             }
-            const nTransfers = 8,
-                transferSize = 64;
-            this._endpoint.startPoll(nTransfers, transferSize);
+            const nTransfers = 8;
+            this._endpoint.startPoll(nTransfers);
 
             this._endpoint.on('data', (data) => {
                 // Skip decryption for modern CO2 sensors.
@@ -119,7 +123,7 @@ class CO2Monitor extends EventEmitter {
                         .reduce((s, item) => (s + item), 0) & 0xff;
                 // Validate checksum (or skip if magic byte detected).
                 if (decrypted[4] !== 0x0d || checksum !== sum) {
-                    return this._interface.emit(
+                    return this.emit(
                         'error', new Error('Checksum Error.')
                     );
                 }
@@ -137,8 +141,12 @@ class CO2Monitor extends EventEmitter {
                     case 0x50:
                         // CO2
                         this._co2 = value;
-                        this.emit('co2', this.co2);
+                        this.emit('co2', this._co2);
                         break;
+                    case 0x41:
+                        // humidity
+                        this._hum = parseFloat(value / 100);
+                        this.emit('hum', this._hum);
                     default:
                         break;
                 }
@@ -154,7 +162,7 @@ class CO2Monitor extends EventEmitter {
      * Get latest Ambient Temperature (Tamb)
      * @returns {Number}
      */
-    get temperature () {
+    get temperature() {
         return this._temp;
     }
 
@@ -162,8 +170,17 @@ class CO2Monitor extends EventEmitter {
      * Get latest Relative Concentration of CO2 (CntR)
      * @returns {Number}
      */
-    get co2 () {
+    get co2() {
         return this._co2;
+    }
+
+    /**
+     * 
+     * Get latest Relative Air Humidity
+     * @returns {Number}
+     */
+    get humidity() {
+        return this._hum;
     }
 
     /**
