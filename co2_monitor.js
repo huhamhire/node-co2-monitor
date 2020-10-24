@@ -175,7 +175,6 @@ class CO2Monitor extends EventEmitter {
     }
 
     /**
-     * 
      * Get latest Relative Air Humidity
      * @returns {Number}
      */
