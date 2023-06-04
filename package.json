@@ -14,7 +14,7 @@
   },
   "main": "co2_monitor.js",
   "dependencies": {
-    "usb": "^1.6.3"
+    "usb": "^2.9.0"
   },
   "devDependencies": {
     "eslint": "^7.12.0"
