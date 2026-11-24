@@ -2,6 +2,11 @@
 
 Node.JS library for reading CO2 concentration and indoor temperature from TFA Dostmann AirCO2NTROL Mini.
 
+> [!NOTE]
+> For Prometheus monitoring, use
+> [Air CO2 Exporter](https://github.com/huhamhire/air-co2-exporter),
+> the Go successor to the Node.js CO2 Monitor Exporter.
+
 [![npm](https://img.shields.io/npm/v/node-co2-monitor.svg)](https://www.npmjs.com/package/node-co2-monitor)
 [![npm downloads](https://img.shields.io/npm/dm/node-co2-monitor.svg)](https://www.npmjs.com/package/node-co2-monitor)
 
